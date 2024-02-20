@@ -1,4 +1,3 @@
-
 from operator import or_
 import os
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for, current_app, send_from_directory, flash
@@ -10,6 +9,8 @@ from werkzeug.utils import secure_filename
 from app.utils import create_installer, save_file, basedir
 from app import db
 from app.models import InstallerSwitch, Package, PackageVersion, Installer, User
+from sqlalchemy import func
+
 
 
 winget = Blueprint('winget', __name__)
@@ -21,7 +22,7 @@ def index():
 @winget.route('/information')
 def information():
     return jsonify({"Data": {"SourceIdentifier": current_app.config["REPO_NAME"], "ServerSupportedVersions": ["1.4.0", "1.5.0"]}})
-    
+
 @winget.route('/packageManifests/<name>', methods=['GET'])
 def get_package_manifest(name):
     package = Package.query.filter_by(identifier=name).first()
@@ -49,6 +50,9 @@ def manifestSearch():
         keyword = query.get('KeyWord')
         match_type = query.get('MatchType')
         like_expression = f'%{keyword}%' if match_type != "Exact" else keyword
+
+        current_app.logger.info(f"Query: Keyword='{keyword}', MatchType='{match_type}'")
+
         packages_query = packages_query.filter(
             or_(
                 Package.name.ilike(like_expression),
@@ -56,13 +60,15 @@ def manifestSearch():
             )
         )
 
+
+
     # Mapping of PackageMatchField to database field
     db_field_map = {
         'PackageName': 'name',
         'PackageIdentifier': 'identifier',
-        'PackageFamilyName': 'identifier',  
-        'ProductCode': 'name',     
-        'Moniker': 'name'                
+        'PackageFamilyName': 'identifier',
+        'NormalizedPackageNameAndPublisher': 'name',
+        'Moniker': 'name'
     }
 
     # Combine Filters and Inclusions and process them
@@ -72,26 +78,33 @@ def manifestSearch():
     for filter_entry in combined_filters:
         package_match_field = filter_entry.get('PackageMatchField')
         request_match = filter_entry.get('RequestMatch')
-        
+
+
         if not all([package_match_field, request_match]):
             continue  # Skip if filter is incomplete
 
         db_field = db_field_map.get(package_match_field)
         if not db_field:
-            current_app.logger.error(f"Unsupported PackageMatchField: {package_match_field}, skipping.")
+            #current_app.logger.error(f"Unsupported PackageMatchField: {package_match_field}, skipping.")
             continue
 
         keyword_filter = request_match.get('KeyWord')
         match_type_filter = request_match.get('MatchType')
         filter_expression = f'%{keyword_filter}%' if match_type_filter != "Exact" else keyword_filter
 
-        if match_type_filter == "Exact":
-            filter_conditions.append(getattr(Package, db_field) == keyword_filter)
-        elif match_type_filter in ["Partial", "Substring", "CaseInsensitive"]:
-            filter_conditions.append(getattr(Package, db_field).ilike(filter_expression))
+        current_app.logger.info(f"Filtering on db_field='{db_field}', keyword_filter='{keyword_filter}', match_type_filter='{match_type_filter}', filter_expression='{filter_expression}'")
+
+        if package_match_field == "NormalizedPackageNameAndPublisher":
+            # Modificação para permitir correspondência parcial ou substring
+            filter_conditions.append(func.lower(func.replace(keyword_filter, ' ', '')).contains(func.lower(func.replace(getattr(Package, db_field), ' ', ''))))
         else:
-            current_app.logger.error("Invalid match type in filters provided.")
-            return jsonify({"error": "Invalid match type in filters"}), 400
+            if match_type_filter == "Exact":
+                filter_conditions.append(getattr(Package, db_field) == keyword_filter)
+            elif match_type_filter in ["Partial", "Substring", "CaseInsensitive"]:
+                filter_conditions.append(getattr(Package, db_field).ilike(filter_expression))
+            else:
+                current_app.logger.error("Invalid match type in filters provided.")
+                return jsonify({"error": "Invalid match type in filters"}), 400
 
     if filter_conditions:
         packages_query = packages_query.filter(and_(*filter_conditions))
@@ -101,7 +114,7 @@ def manifestSearch():
     packages = packages_query.all()
 
     if not packages:
-        current_app.logger.info("No packages found.")
+        #current_app.logger.info("No packages found.")
         return jsonify({}), 204
 
     # Generate output data and check if there are any installers available
@@ -112,7 +125,7 @@ def manifestSearch():
     ]
 
     if not output_data:
-        current_app.logger.info("Found packages, but no installers available.")
+        #current_app.logger.info("Found packages, but no installers available.")
         return jsonify({}), 204
 
     current_app.logger.info(f"Returning {len(output_data)} packages.")
