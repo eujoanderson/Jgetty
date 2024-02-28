@@ -100,7 +100,7 @@ def manifestSearch():
         if package_match_field == "ProductCode" :
             continue
 
-        if package_match_field == "NormalizedPackageNameAndPublisher" or package_match_field == "PackageFamilyName":
+        if package_match_field == "NormalizedPackageNameAndPublisher":
             # Modificação para permitir correspondência parcial ou substring
             filter_conditions.append(func.lower(func.replace(keyword_filter, ' ', '')).contains(func.lower(func.replace(getattr(Package, db_field), ' ', ''))))
         else:
