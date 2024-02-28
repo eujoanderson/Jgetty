@@ -31,7 +31,7 @@ def generate_presigned_url():
         file_extension = file_name.rsplit('.', 1)[1]
         content_type = request.form.get('content_type')
 
-        
+
 
         # Specify the S3 object key where the file will be uploaded
         publisher = secure_filename(request.form.get('publisher'))
@@ -69,11 +69,11 @@ def generate_presigned_url():
 def add_package():
     form = AddPackageForm(meta={'csrf': False})
     installer_form = form.installer
-    
+
     if not form.validate_on_submit():
         validation_errors = form.errors
         return str("Form validation error"), 500
-            
+
     name = form.name.data
     publisher = secure_filename(form.publisher.data)
     identifier = form.identifier.data
@@ -81,7 +81,7 @@ def add_package():
     file = installer_form.file.data
     external_url = installer_form.url.data
     is_aws = installer_form.is_aws.data
-    
+
 
     package = Package(identifier=identifier, name=name, publisher=publisher)
 
@@ -98,7 +98,7 @@ def add_package():
         version_code = PackageVersion(version_code=version, package_locale="en-US", short_description=name, identifier=identifier)
         version_code.installers.append(installer)
         package.versions.append(version_code)
-        
+
     try:
         db.session.add(package)
         db.session.commit()
@@ -164,10 +164,10 @@ def add_version(identifier):
         validation_errors = form.errors
         current_app.logger.warning(f"Validation errors: {validation_errors}")
         return jsonify(validation_errors), 400
-    
+
     version = installer_form.version.data
-    
-    
+
+
 
     package = Package.query.filter_by(identifier=identifier).first()
     if package is None:
@@ -179,7 +179,7 @@ def add_version(identifier):
         current_app.logger.info("File and version found")
         if not current_user.role.has_permission('add:installer'):
             current_app.logger.warning("User doesn't have permission to add installer")
-            return "User doesn't have permission to add installer", 403        
+            return "User doesn't have permission to add installer", 403
         installer = create_installer(package.publisher, identifier, version.version_code, installer_form)
         if installer is None:
             return "Error creating installer", 500
@@ -209,14 +209,14 @@ def add_installer(identifier):
         validation_errors = form.errors
         current_app.logger.warning(f"Validation errors: {validation_errors}")
         return jsonify(validation_errors), 400
-    
-    
-    
-    
+
+
+
+
     package = Package.query.filter_by(identifier=identifier).first()
     if package is None:
         return "Package not found", 404
-    
+
     # get version by id
     version = PackageVersion.query.filter_by(version_code=installer_form.version.data).first()
     if version is None:
@@ -232,7 +232,7 @@ def add_installer(identifier):
         db.session.commit()
 
         return redirect(request.referrer)
-    
+
 
 @api.route('/package/<identifier>/edit_installer', methods=['POST'])
 @login_required
@@ -243,7 +243,7 @@ def edit_installer(identifier):
     installer = Installer.query.filter_by(id=id).first()
     if installer is None:
         return "Installer not found", 404
-    
+
     current_app.logger.info(f"Installer found: {installer}")
 
     current_app.logger.info("Going through installer switches to update them")
@@ -255,7 +255,7 @@ def edit_installer(identifier):
             installer_switch = InstallerSwitch.query.filter_by(installer_id=id, parameter=field_name).first()
             if installer_switch is None:
                 installer_switch = InstallerSwitch()
-                installer_switch.parameter = field_name                
+                installer_switch.parameter = field_name
                 installer_switch.value = field_value
                 installer.switches.append(installer_switch)
             else:
@@ -270,7 +270,7 @@ def edit_installer(identifier):
 
     return redirect(request.referrer)
 
-                
+
 
 
 
@@ -282,7 +282,7 @@ def delete_installer(identifier, version, installer):
     if package is None:
         current_app.logger.warning("Package not found")
         return "Package not found", 404
-    
+
     version = PackageVersion.query.filter_by(identifier=identifier, version_code=version).first()
     if version is None:
         current_app.logger.warning("Version not found")
@@ -292,10 +292,10 @@ def delete_installer(identifier, version, installer):
     if installer is None:
         current_app.logger.warning("Installer not found")
         return "Installer not found", 404
-    
+
     delete_installer_util(package, installer, version)
 
-    
+
     db.session.delete(installer)
     db.session.commit()
 
@@ -309,7 +309,7 @@ def delete_version(identifier, version):
     if package is None:
         current_app.logger.warning("Package not found")
         return "Package not found", 404
-    
+
     version = PackageVersion.query.filter_by(identifier=identifier, version_code=version).first()
     if version is None:
         current_app.logger.warning("Version not found")
@@ -335,12 +335,12 @@ def update_user():
     id = request.form['id']
     username = request.form['username'].lower().replace(" ", "")
     email = request.form['email'].lower().replace(" ", "")
-    password = request.form['password']    
+    password = request.form['password']
 
     user = User.query.filter_by(id=id).first()
     if user is None:
         return "User not found", 404
-    
+
     # Check that email or username or both aren't used by another user before updating except for the current user
     if User.query.filter(User.id != id, User.email == email).first():
         flash('Email already in use', 'error')
@@ -348,7 +348,7 @@ def update_user():
     if User.query.filter(User.id != id, User.username == username).first():
         flash('Username already in use', 'error')
         return redirect(request.referrer)
-    
+
     user.username = username
     user.email = email
     if password:
@@ -356,7 +356,7 @@ def update_user():
         db.session.commit()
         flash('Password changed, please login again.', 'success')
         return redirect(url_for('auth.logout'))
-    
+
 
 
     try:
@@ -378,7 +378,7 @@ def change_role(user):
     user = User.query.filter_by(id=user).first()
     if user is None:
         return "User not found", 404
-    
+
     role = Role.query.filter_by(id=role_id).first()
     if role is None:
         return "Role not found", 404
@@ -392,7 +392,7 @@ def change_role(user):
         db.session.rollback()
     flash('Role changed successfully.', 'success')
     response = Response()
-    redirect_url = url_for('ui.users') 
+    redirect_url = url_for('ui.users')
     response.headers['HX-Redirect'] = redirect_url
     return response
 
@@ -417,7 +417,7 @@ def add_user():
     if role is None:
         flash('Role not found', 'error')
         return redirect(request.referrer)
-    
+
     user = User(username=username, email=email, role=role)
     user.set_password(password)
     db.session.add(user)
@@ -429,7 +429,7 @@ def add_user():
         db.session.rollback()
         flash('Database error', 'error')
         return redirect(request.referrer)
-    
+
     flash('User added successfully.', 'success')
     return redirect(request.referrer)
 
@@ -454,7 +454,7 @@ def add_role():
         message = str(error.orig)
         flash(message, 'error')
         return redirect(request.referrer)
-    
+
     flash('Role added successfully.', 'success')
     return redirect(request.referrer)
 
@@ -486,7 +486,7 @@ def delete_role(id):
 @permission_required('delete:user')
 def delete_user(id):
     user = User.query.filter_by(id=id).first()
-    
+
     if user is None:
         return "User not found", 404
     db.session.delete(user)
@@ -507,7 +507,7 @@ def download(identifier, version, architecture, scope):
     if package is None:
         current_app.logger.warning("Package not found")
         return "Package not found", 404
-    
+
     # Get version of package and also match package
     version_code = PackageVersion.query.filter_by(version_code=version, identifier=identifier).first()
     if version_code is None:
@@ -518,7 +518,7 @@ def download(identifier, version, architecture, scope):
     if installer is None:
         current_app.logger.warning("Installer not found")
         return "Installer not found", 404
-    
+
     if current_app.config['USE_S3'] and installer.external_url is None:
         current_app.logger.info("Downloading from S3")
         # Generate a pre-signed URL for the S3 object
@@ -552,15 +552,16 @@ def download(identifier, version, architecture, scope):
 
 
     installer_path = os.path.join(basedir, 'packages', package.publisher, package.identifier, version_code.version_code, installer.architecture)
+    installer_filename = f"{package.publisher}_{version_code.version_code}_{installer.architecture}.{installer.file_name.rsplit('.', 1)[1]}"
 
     current_app.logger.info("Starting download for package:")
     current_app.logger.info(f"Package name: {package.name}")
     current_app.logger.info(f"Package identifier: {package.identifier}")
     current_app.logger.info(f"Package version: {version_code.version_code}")
     current_app.logger.info(f"Architecture: {installer.architecture}")
-    current_app.logger.info(f"Installer file name: {installer.file_name}")
+    current_app.logger.info(f"Installer file name: {installer_filename}")
     current_app.logger.info(f"Installer SHA256: {installer.installer_sha256}")
-    current_app.logger.info(f"Installer path: {installer_path + '/' + installer.file_name}")
+    current_app.logger.info(f"Installer path: {installer_path + '/' + installer_filename}")
     if installer.external_url:
         current_app.logger.info(f"External URL: {installer.external_url}")
 
@@ -579,6 +580,6 @@ def download(identifier, version, architecture, scope):
         package.download_count += 1
         db.session.commit()
 
-        
 
-    return send_from_directory(installer_path, installer.file_name, as_attachment=True)
+
+    return send_from_directory(installer_path, installer_filename, as_attachment=True, )
