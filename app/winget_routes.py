@@ -45,6 +45,8 @@ def manifestSearch():
     # Initialize the base query
     packages_query = Package.query
 
+
+    # winget search
     # If there is a keyword and match type from Query, apply them first
     if query:
         keyword = query.get('KeyWord')
@@ -65,9 +67,10 @@ def manifestSearch():
     # Mapping of PackageMatchField to database field
     db_field_map = {
         'PackageName': 'name',
-        'PackageIdentifier': 'identifier',
-        'PackageFamilyName': 'identifier',
+        'PackageIdentifier': 'name',
+        'PackageFamilyName': 'name',
         'NormalizedPackageNameAndPublisher': 'name',
+        'ProductCode': 'name',
         'Moniker': 'name'
     }
 
@@ -94,12 +97,16 @@ def manifestSearch():
 
         current_app.logger.info(f"Filtering on db_field='{db_field}', keyword_filter='{keyword_filter}', match_type_filter='{match_type_filter}', filter_expression='{filter_expression}'")
 
-        if package_match_field == "NormalizedPackageNameAndPublisher":
+        if package_match_field == "ProductCode" :
+            continue
+
+        if package_match_field == "NormalizedPackageNameAndPublisher" or package_match_field == "PackageFamilyName":
             # Modificação para permitir correspondência parcial ou substring
             filter_conditions.append(func.lower(func.replace(keyword_filter, ' ', '')).contains(func.lower(func.replace(getattr(Package, db_field), ' ', ''))))
         else:
             if match_type_filter == "Exact":
-                filter_conditions.append(getattr(Package, db_field) == keyword_filter)
+                #filter_conditions.append(getattr(Package, db_field) == keyword_filter)
+                filter_conditions.append(func.lower(func.replace(keyword_filter, ' ', '')).contains(func.lower(func.replace(getattr(Package, db_field), ' ', ''))))
             elif match_type_filter in ["Partial", "Substring", "CaseInsensitive"]:
                 filter_conditions.append(getattr(Package, db_field).ilike(filter_expression))
             else:
@@ -112,6 +119,8 @@ def manifestSearch():
     # Apply maximum_results limit
     packages_query = packages_query.limit(maximum_results)
     packages = packages_query.all()
+
+    current_app.logger.info(f"Davi olha esse aqui {packages}")
 
     if not packages:
         #current_app.logger.info("No packages found.")
