@@ -13,19 +13,19 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 def get_file_hash_from_url(url, max_content_length=1024 * 1024 * 1024 * 10):  # Default max content length set to 10GB
     """Download file from the given URL and return its SHA256 hash."""
-    
+
     # Ensure the URL uses HTTPS
     if not url.startswith("https://"):
         raise ValueError("URL must use HTTPS.")
-    
+
     response = requests.get(url, stream=True, timeout=15)  # Timeout set to 10 seconds
     response.raise_for_status()  # Ensure we got an OK response
-    
+
     # Check if the content length exceeds the max content length
     content_length = int(response.headers.get('content-length', 0))
     if content_length > max_content_length:
         raise ValueError(f"Content length exceeds allowed limit of {max_content_length} bytes.")
-    
+
     hash_sha256 = hashlib.sha256()
     for chunk in response.iter_content(chunk_size=4096):
         hash_sha256.update(chunk)
@@ -71,11 +71,11 @@ def create_installer(publisher, identifier, version, installer_form):
         hash = get_file_hash_from_url(external_url)
         file_name = None
 
-        
+
     else:
         current_app.logger.error("No file or external URL provided")
         raise ValueError("Either a file or an external URL must be provided.")
-    
+
     installer = Installer(
         architecture=architecture,
         installer_type=installer_type,
@@ -139,6 +139,8 @@ def save_file(file, file_name, publisher, identifier, version, architecture):
     version = secure_filename(version)
     architecture = secure_filename(architecture)
 
+    # Nome do arquivo ajustado
+    file_name = f'{publisher}_{version}_{architecture}.{file_name.rsplit(".", 1)[1]}'
 
     # Create directory if it doesn't exist
     save_directory = os.path.join(basedir, 'packages', publisher, identifier, version, architecture)
