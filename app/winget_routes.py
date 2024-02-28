@@ -120,8 +120,6 @@ def manifestSearch():
     packages_query = packages_query.limit(maximum_results)
     packages = packages_query.all()
 
-    current_app.logger.info(f"Davi olha esse aqui {packages}")
-
     if not packages:
         #current_app.logger.info("No packages found.")
         return jsonify({}), 204
