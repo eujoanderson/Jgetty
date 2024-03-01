@@ -34,7 +34,7 @@ def generate_presigned_url():
 
 
         # Specify the S3 object key where the file will be uploaded
-        publisher = secure_filename(request.form.get('publisher'))
+        publisher = request.form.get('publisher')
         identifier = secure_filename(request.form.get('identifier'))
         # Get version from db either by id or by name from the request
         version = secure_filename(request.form.get('installer-version'))
@@ -75,7 +75,7 @@ def add_package():
         return str("Form validation error"), 500
 
     name = form.name.data
-    publisher = secure_filename(form.publisher.data)
+    publisher = form.publisher.data
     identifier = form.identifier.data
     version = installer_form.version.data
     file = installer_form.file.data
