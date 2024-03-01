@@ -46,7 +46,7 @@ def create_installer(publisher, identifier, version, installer_form):
 
     # If file is provided, save the file
     if file:
-        file_name = secure_filename(file.filename)
+        file_name = file.filename
         file_name = f'{scope}.' + file_name.rsplit('.', 1)[1]
         hash = save_file(file, file_name, publisher, identifier, version, architecture)
         if hash is None:
@@ -133,9 +133,13 @@ def delete_installer_util(package, installer, version):
                 os.remove(installer_path)
 
 
+
 def save_file(file, file_name, publisher, identifier, version, architecture):
-    publisher = secure_filename(publisher)
-    identifier = secure_filename(identifier)
+
+    current_app.logger.info(f"DAVIIIIIII - {file}, {file_name}, {publisher}, {identifier}, {version}")
+
+    #publisher = secure_filename(publisher)
+    #identifier = secure_filename(identifier)
     version = secure_filename(version)
     architecture = secure_filename(architecture)
 
@@ -146,6 +150,8 @@ def save_file(file, file_name, publisher, identifier, version, architecture):
     save_directory = os.path.join(basedir, 'packages', publisher, identifier, version, architecture)
     if not os.path.exists(save_directory):
         os.makedirs(save_directory)
+
+    current_app.logger.info(f"Save Directory {save_directory}")
 
     # Save file locally
     file_path = os.path.join(save_directory, file_name)
