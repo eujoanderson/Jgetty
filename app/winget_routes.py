@@ -30,8 +30,6 @@ def get_package_manifest(name):
         return jsonify({}), 204
     return jsonify(package.generate_output())
 
-
-
 @winget.route('/manifestSearch', methods=['POST'])
 def manifestSearch():
     request_data = request.get_json()
@@ -62,8 +60,6 @@ def manifestSearch():
             )
         )
 
-
-
     # Mapping of PackageMatchField to database field
     db_field_map = {
         'PackageName': 'name',
@@ -88,14 +84,14 @@ def manifestSearch():
 
         db_field = db_field_map.get(package_match_field)
         if not db_field:
-            #current_app.logger.error(f"Unsupported PackageMatchField: {package_match_field}, skipping.")
+            current_app.logger.error(f"Unsupported PackageMatchField: {package_match_field}, skipping.")
             continue
 
         keyword_filter = request_match.get('KeyWord')
         match_type_filter = request_match.get('MatchType')
         filter_expression = f'%{keyword_filter}%' if match_type_filter != "Exact" else keyword_filter
 
-        current_app.logger.info(f"Filtering on db_field='{db_field}', keyword_filter='{keyword_filter}', match_type_filter='{match_type_filter}', filter_expression='{filter_expression}'")
+        #current_app.logger.info(f"Filtering on db_field='{db_field}', keyword_filter='{keyword_filter}', match_type_filter='{match_type_filter}', filter_expression='{filter_expression}'")
 
         if package_match_field == "ProductCode" :
             continue
@@ -119,6 +115,8 @@ def manifestSearch():
     # Apply maximum_results limit
     packages_query = packages_query.limit(maximum_results)
     packages = packages_query.all()
+
+    #current_app.logger.info(f"Davi olha esse aqui {packages}")
 
     if not packages:
         #current_app.logger.info("No packages found.")
