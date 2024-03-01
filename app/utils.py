@@ -136,8 +136,6 @@ def delete_installer_util(package, installer, version):
 
 def save_file(file, file_name, publisher, identifier, version, architecture):
 
-    current_app.logger.info(f"DAVIIIIIII - {file}, {file_name}, {publisher}, {identifier}, {version}")
-
     #publisher = secure_filename(publisher)
     #identifier = secure_filename(identifier)
     version = secure_filename(version)
@@ -150,8 +148,6 @@ def save_file(file, file_name, publisher, identifier, version, architecture):
     save_directory = os.path.join(basedir, 'packages', publisher, identifier, version, architecture)
     if not os.path.exists(save_directory):
         os.makedirs(save_directory)
-
-    current_app.logger.info(f"Save Directory {save_directory}")
 
     # Save file locally
     file_path = os.path.join(save_directory, file_name)
