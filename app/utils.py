@@ -135,7 +135,6 @@ def delete_installer_util(package, installer, version):
 
 
 def save_file(file, file_name, publisher, identifier, version, architecture):
-
     #publisher = secure_filename(publisher)
     #identifier = secure_filename(identifier)
     version = secure_filename(version)
