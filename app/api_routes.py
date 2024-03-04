@@ -581,5 +581,4 @@ def download(identifier, version, architecture, scope):
         db.session.commit()
 
 
-
     return send_from_directory(installer_path, installer_filename, as_attachment=True, )
