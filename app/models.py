@@ -11,6 +11,7 @@ class Package(db.Model):
     publisher = db.Column(db.String(255), nullable=False)
     versions = db.relationship('PackageVersion', backref='package', cascade='all, delete-orphan')
     download_count = db.Column(db.Integer, default=0)
+    family_name = db.Column(db.String(255), nullable=True)
 
     def generate_output(self):
             output = {
@@ -33,7 +34,6 @@ class Package(db.Model):
             if data["Installers"]:
                 version_data.append(data)
         return version_data
-
     def _get_default_locale(self, version):
         return {
             "PackageLocale": version.package_locale,
@@ -41,10 +41,10 @@ class Package(db.Model):
             "PackageName": self.name,
             "ShortDescription": version.short_description
         }
-
     def _get_installer_data(self, version):
             installer_data = []
             for installer in version.installers:
+                installer_switches_without_dependencies = {key: value for key, value in self._get_installer_switches(installer).items() if key != 'Dependencies'}
                 if installer.scope == "both":
                     # If installer is for both user and machine, create two entries for each scope (user and machine) but use it with download url
                     for scope in ["user", "machine"]:
@@ -54,11 +54,22 @@ class Package(db.Model):
                             "InstallerUrl": url_for('api.download', identifier=self.identifier, version=version.version_code, architecture=installer.architecture, scope=installer.scope, _external=True, _scheme="https"),
                             "InstallerSha256": installer.installer_sha256,
                             "Scope": scope,
-                            "InstallerSwitches": self._get_installer_switches(installer)
+                            "InstallerSwitches": installer_switches_without_dependencies
                         }
                         if installer.installer_type == 'zip':
                             data["NestedInstallerType"] = installer.nested_installer_type
                             data["NestedInstallerFiles"] = self._get_nested_installer_data(installer)
+                        
+                        dependencies = self._get_installer_switches(installer).get('Dependencies')
+                        if dependencies:
+                            data["Dependencies"] = {
+                                    "PackageDependencies": [
+                                    ]
+                                }
+                            for installers in dependencies.split(";"):
+                                new_element = {"PackageIdentifier": installers}
+                                data["Dependencies"]["PackageDependencies"].append(new_element)
+                                
                         installer_data.append(data)
                 else:
                     data = {
@@ -66,21 +77,31 @@ class Package(db.Model):
                         "InstallerType": installer.installer_type,
                         "InstallerUrl": url_for('api.download', identifier=self.identifier, version=version.version_code, architecture=installer.architecture, scope=installer.scope, _external=True, _scheme="https"),
                         "InstallerSha256": installer.installer_sha256,
-                        "Scope": installer.scope,
-                        "InstallerSwitches": self._get_installer_switches(installer)
+                        "Scope": installer.scope,                           
+                        "InstallerSwitches": installer_switches_without_dependencies
                     }
                     if installer.installer_type == 'zip':
                             data["NestedInstallerType"] = installer.nested_installer_type
                             data["NestedInstallerFiles"] = self._get_nested_installer_data(installer)
+
+                    dependencies = self._get_installer_switches(installer).get('Dependencies')
+                    if dependencies:
+                        data["Dependencies"] = {
+                                "PackageDependencies": [
+                                ]
+                            }
+                        for installers in dependencies.split(";"):
+                            new_element = {"PackageIdentifier": installers}
+                            data["Dependencies"]["PackageDependencies"].append(new_element)
                     installer_data.append(data)
             return installer_data
-    
+
     def _get_installer_switches(self, installer):
         switches = {}
         for switch in installer.switches:
             switches[switch.parameter] = switch.value
         return switches
-    
+
     def _get_nested_installer_data(self, installer):
         nested_installer_data = []
         for nested_installer_file in installer.nested_installer_files:
@@ -92,13 +113,14 @@ class Package(db.Model):
         return nested_installer_data
 
     def generate_output_manifest_search(self):
+        # Ao colocar .lower().replace(" ", "") nesse output é possível alterar como vai ser mostrado na tela do winget quando utilizar o winget upgrade
         output = {
                     "PackageIdentifier": self.identifier,
                     "PackageName": self.name,
                     "Publisher": self.publisher,
                     "Versions": []
                 }
-            
+
         for version in self.versions:
             version_data = {
                 "PackageVersion": version.version_code
@@ -132,7 +154,7 @@ class Installer(db.Model):
     switches = db.relationship('InstallerSwitch', backref='installer', lazy=True)
     nested_installer_type = db.Column(db.String(50), nullable=True)
     nested_installer_files = db.relationship('NestedInstallerFile', backref='installer', lazy=True)
-    
+
     def to_json(self):
         switches = [switch.to_json() for switch in self.switches]
         return {
@@ -159,7 +181,7 @@ class NestedInstallerFile(db.Model):
             'relative_file_path': self.relative_file_path,
             'portable_command_alias': self.portable_command_alias
         }
-        
+
 
 class InstallerSwitch(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -174,7 +196,7 @@ class InstallerSwitch(db.Model):
             'parameter': self.parameter,
             'value': self.value
         }
-    
+
 
 
 class User(UserMixin, db.Model):
@@ -189,7 +211,7 @@ class User(UserMixin, db.Model):
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         self.password = hashed_password
 
-     
+
 roles_permissions = db.Table(
     'roles_permissions',
     db.Column('role_id', db.Integer, db.ForeignKey('role.id'), primary_key=True),
@@ -207,13 +229,12 @@ class Role(db.Model):
     def has_permission(self, name):
         # Check if the permission name is in there
         return name in [permission.name for permission in self.permissions]
-    
+
     def user_count(self):
         return len(self.users)
-        
+
 
 
 class Permission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
-
