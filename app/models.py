@@ -11,7 +11,6 @@ class Package(db.Model):
     publisher = db.Column(db.String(255), nullable=False)
     versions = db.relationship('PackageVersion', backref='package', cascade='all, delete-orphan')
     download_count = db.Column(db.Integer, default=0)
-    family_name = db.Column(db.String(255), nullable=True)
 
     def generate_output(self):
             output = {
