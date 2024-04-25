@@ -1,47 +1,51 @@
-# Use an official Python runtime as the base image
 FROM python:3.9-alpine
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container
+# Copie o arquivo de requisitos para o contêiner
 COPY requirements.txt .
 
-RUN apk add --no-cache build-base openssl-dev libffi-dev
-RUN apk add nginx vim nano bash
+# Instale as dependências do Python
+RUN apk add --no-cache build-base openssl-dev libffi-dev \
+    && apk add --no-cache python3-dev \
+    && pip install --no-cache-dir -r requirements.txt
 
-# Install the Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Instale os pacotes de idioma para português
+RUN apk add --no-cache gettext
+RUN apk add vim nano nginx bash
 
-# Copy the Flask app code into the container
+
+# Configure o idioma da aplicação
+ENV LANG=pt_BR.UTF-8
+ENV LC_ALL=pt_BR.UTF-8
+
+# Copie o código da aplicação Flask para o contêiner
 COPY app/ app/
 COPY tailwind.config.js .
 COPY package.json .
 COPY package-lock.json .
-COPY src/ src/ 
+COPY src/ src/
 COPY settings.toml .
 COPY config.py .
 COPY migrations/ migrations/
-COPY start.sh .
-COPY fullchain.pem /etc/nginx/
 COPY privkey.pem /etc/nginx/
+COPY fullchain.pem /etc/nginx/
 COPY nginx.conf /etc/nginx/
+COPY start.sh .
+# Defina as permissões de execução para o script de inicialização
+RUN chmod +x ./start.sh
 
-RUN ["chmod", "+x", "./start.sh"]
-
-# Set the environment variables
+# Defina as variáveis de ambiente
 ENV FLASK_APP=app
 ENV FLASK_ENV=production
 
-# Build the CSS using Tailwind
-RUN apk update && apk add --no-cache nodejs npm && apk add tzdata
-RUN npm ci
-RUN npm run build:css
+# Compile os arquivos CSS usando o Tailwind
+RUN apk add --no-cache nodejs npm tzdata \
+    && npm ci \
+    && npm run build:css
 
-
-# Expose port 8080 for Gunicorn
+# Exponha a porta 8080 para o Gunicorn
 EXPOSE 8080
-
-# Start the app using Gunicorn boot.sh
+EXPOSE 8443
+# Inicie o aplicativo usando o script de inicialização
 ENTRYPOINT ["./start.sh"]
-CMD ["nginx", "-g", "daemon off;"]]

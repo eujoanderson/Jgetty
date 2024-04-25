@@ -11,6 +11,8 @@ from app import db
 from app.models import InstallerSwitch, Package, PackageVersion, Installer, User
 from sqlalchemy import func
 
+from app import db, settings
+from app.models import InstallerSwitch, Package, PackageVersion, Installer, Setting, User
 
 
 winget = Blueprint('winget', __name__)
@@ -21,7 +23,7 @@ def index():
 
 @winget.route('/information')
 def information():
-    return jsonify({"Data": {"SourceIdentifier": current_app.config["REPO_NAME"], "ServerSupportedVersions": ["1.4.0", "1.5.0"]}})
+    return jsonify({"Data": {"SourceIdentifier": Setting.get("REPO_NAME").get_value(), "ServerSupportedVersions": ["1.4.0", "1.5.0"]}})
 
 @winget.route('/packageManifests/<name>', methods=['GET'])
 def get_package_manifest(name):
@@ -116,8 +118,6 @@ def manifestSearch():
     packages_query = packages_query.limit(maximum_results)
     packages = packages_query.all()
 
-    #current_app.logger.info(f"Davi olha esse aqui {packages}")
-
     if not packages:
         #current_app.logger.info("No packages found.")
         return jsonify({}), 204
@@ -136,3 +136,4 @@ def manifestSearch():
     current_app.logger.info(f"Returning {len(output_data)} packages.")
 
     return jsonify({"Data": output_data})
+
