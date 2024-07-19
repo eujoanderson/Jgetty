@@ -128,6 +128,7 @@ def create_app():
     app.add_template_global(constants.simplified_architectures, name='architectures')
     app.add_template_global(constants.installer_types, name='installer_types')
     app.add_template_global(constants.installer_scopes, name='installer_scopes')
+    app.add_template_global(constants.licenses, name='licenses')
     app.add_template_global(constants.simplified_nested_installer_types, name='nested_installer_types')
 
     def get_settings():

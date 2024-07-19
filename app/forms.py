@@ -5,6 +5,7 @@ from wtforms import (StringField, TextAreaField, IntegerField, BooleanField,
 from wtforms.validators import InputRequired, Length, Optional    
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 import wtforms
+from .constants import licenses
 from wtforms import Form, StringField, SelectField, validators, ValidationError
 
 from app.models import Setting
@@ -128,6 +129,8 @@ class AddPackageForm(FlaskForm):
     InputRequired(),
     Length(min=1, max=101)
     ])
+
+    license = SelectField('License', choices=licenses)
 
     # Include the AddInstallerFormFields without csrf protection
     installer = wtforms.FormField(AddInstallerFormFieldsWithoutFile)

@@ -70,10 +70,13 @@
                             </th>
 
                             <th scope="col" class="px-4 py-3.5 text-sm font-normal text-left rtl:text-right ">
-                                Publisher</th>
+                                Latest Version</th>
 
                             <th scope="col" class="px-4 py-3.5 text-sm font-normal text-left rtl:text-right ">
-                                Latest Version</th>
+                            Scope</th>
+
+                            <th scope="col" class="px-4 py-3.5 text-sm font-normal text-left rtl:text-right ">
+                            License</th>
 
                             <th scope="col" class="relative py-3.5 px-4">
                                 <span class="sr-only">Edit</span>
@@ -95,10 +98,6 @@
                                     <p x-text="package.identifier"></p>
                                 </td>
 
-                                <td class="px-4 py-4 text-md whitespace-nowrap">
-                                    <p class=" hover:font-bold cursor-pointer transition-[font-weight] duration-300 "
-                                        x-text="package.publisher"></p>
-                                </td>
 
                                 <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
                                     <div class="inline px-3 py-1 font-normal rounded-full gap-x-2"
@@ -106,6 +105,21 @@
                                         <span
                                             x-text="package.versions.length > 0 ? 'Version ' + package.versions[0].version_code : 'No versions'"></span>
                                     </div>
+                                </td>
+
+                                <td class="px-4 py-4 text-md whitespace-nowrap">
+                                    <template x-for="installer in package.versions[0].installers" :key="installer.id">
+                                        <p :class="{
+                                                'inline px-3 py-1 font-normal rounded-full gap-x-2 bg-pink-500': installer.scope == 'user',
+                                                'inline px-3 py-1 font-normal rounded-full gap-x-2 bg-blue-300': installer.scope == 'machine',
+                                                'hover:font-bold cursor-pointer transition-[font-weight] duration-300': true
+                                            }"
+                                            x-text="installer.scope"></p>
+                                    </template>
+                                </td>
+
+                                <td class="px-4 py-4 text-md whitespace-nowrap">
+                                    <p class="inline px-3 py-1 font-normal rounded-full gap-x-2 bg-license" x-text="package.license"></p>
                                 </td>
 
                                 <td class="px-4 py-4 text-sm whitespace-nowrap flex flex-row gap-x-1 justify-center">

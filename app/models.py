@@ -14,6 +14,7 @@ class Package(db.Model):
     identifier = db.Column(db.String(255), unique=True, nullable=False)
     name = db.Column(db.String(255), nullable=False)
     publisher = db.Column(db.String(255), nullable=False)
+    license = db.Column(db.String(255), unique=False, nullable=True)
     versions = db.relationship(
         "PackageVersion", backref="package", cascade="all, delete-orphan"
     )
@@ -25,6 +26,7 @@ class Package(db.Model):
             "identifier": self.identifier,
             "name": self.name,
             "publisher": self.publisher,
+            "license": self.license,
             "download_count": self.download_count,
             "versions": sorted(
                 [version.to_dict() for version in self.versions],
@@ -37,6 +39,7 @@ class Package(db.Model):
         output = {
             "Data": {
                 "PackageIdentifier": self.identifier,
+                "License": self.license,
                 "Versions": self._get_version_data(),
             }
         }

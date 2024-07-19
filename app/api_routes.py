@@ -209,12 +209,13 @@ def add_package():
     name = form.name.data
     publisher = secure_filename(form.publisher.data)
     identifier = form.identifier.data
+    licensed = form.license.data
     version = installer_form.version.data
     file = installer_form.file.data
     external_url = installer_form.url.data
     is_aws = installer_form.is_aws.data
 
-    package = Package(identifier=identifier, name=name, publisher=publisher)
+    package = Package(identifier=identifier, name=name, publisher=publisher, license=licensed)
 
     if file or external_url and version:
         current_app.logger.info("File and version found")
