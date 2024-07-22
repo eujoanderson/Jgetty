@@ -258,6 +258,8 @@ def update_package(identifier):
         return "Package not found", 404
     name = request.form["name"]
     publisher = request.form["publisher"]
+    license = request.form["license"]
+    package.license = license
     package.name = name
     package.publisher = publisher
     db.session.commit()
