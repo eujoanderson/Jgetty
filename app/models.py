@@ -69,7 +69,13 @@ class Package(db.Model):
     def _get_installer_data(self, version):
         installer_data = []
         for installer in version.installers:
-            installer_switches_without_dependencies = {key: value for key, value in self._get_installer_switches(installer).items() if key != 'Dependencies'}
+            installer_switches_filtered = {
+            key: value
+            for key, value in self._get_installer_switches(installer).items()
+            if key not in ['Dependencies', 'ElevationRequirement']
+        }
+
+            
             if installer.scope == "both":
                 # If installer is for both user and machine, create two entries for each scope (user and machine) but use it with download url
                 for scope in ["user", "machine"]:
@@ -103,6 +109,11 @@ class Package(db.Model):
                         for installers in dependencies.split(";"):
                             new_element = {"PackageIdentifier": installers}
                             data["Dependencies"]["PackageDependencies"].append(new_element)
+                            
+                    elevation_requirement = self._get_installer_switches(installer).get('ElevationRequirement')
+                    if elevation_requirement:
+                        data["ElevationRequirement"] = elevation_requirement
+                        
                     installer_data.append(data)
             else:
                 data = {
@@ -119,7 +130,7 @@ class Package(db.Model):
                     ),
                     "InstallerSha256": installer.installer_sha256,
                     "Scope": installer.scope,
-                    "InstallerSwitches": installer_switches_without_dependencies,
+                    "InstallerSwitches": installer_switches_filtered,
                 }
                 if installer.installer_type == "zip":
                     data["NestedInstallerType"] = installer.nested_installer_type
@@ -135,6 +146,12 @@ class Package(db.Model):
                     for installers in dependencies.split(";"):
                         new_element = {"PackageIdentifier": installers}
                         data["Dependencies"]["PackageDependencies"].append(new_element)
+                        
+                elevation_requirement = self._get_installer_switches(installer).get('ElevationRequirement')
+                if elevation_requirement:
+                    data["ElevationRequirement"] = elevation_requirement
+                    
+                    
                 installer_data.append(data)
         return installer_data
 
@@ -413,4 +430,3 @@ class Setting(db.Model):
             "depends_on": self.depends_on,
             "is_env": upper_key in (k.upper() for k in current_app.config)
         }
-
